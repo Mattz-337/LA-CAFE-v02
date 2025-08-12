@@ -304,6 +304,7 @@ p {
     padding: 80px 0;
     background: #F5F5DC;
     position: relative;
+    overflow: hidden; /* ADDED: Prevent horizontal scroll */
 }
 
 .menu-showcase::before {
@@ -335,6 +336,7 @@ p {
     display: flex;
     justify-content: center;
     gap: 1rem;
+    margin-bottom: 2rem; /* ADDED: Bottom margin */
 }
 
 .carousel-btn {
@@ -347,6 +349,9 @@ p {
     font-size: 1.5rem;
     cursor: pointer;
     transition: all 0.3s ease;
+    display: flex; /* ADDED: Flex for better centering */
+    align-items: center;
+    justify-content: center;
 }
 
 .carousel-btn:hover {
@@ -354,24 +359,48 @@ p {
     transform: scale(1.1);
 }
 
-.menu-carousel {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-    position: relative;
-    z-index: 2;
+.carousel-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
 }
 
+/* UPDATED: Carousel Container */
+.carousel-container {
+    position: relative;
+    z-index: 2;
+    overflow: hidden; /* ADDED: Hide overflow */
+    width: 100%;
+}
+
+/* UPDATED: Menu Carousel - Changed from Grid to Flexbox */
+.menu-carousel {
+    display: flex;
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    width: 100%;
+    /* REMOVED: grid properties that were conflicting */
+}
+
+/* UPDATED: Menu Items - Proper flex sizing */
 .menu-item {
+    flex: 0 0 25%; /* UPDATED: 4 items on desktop */
+    padding: 0 1rem;
+    box-sizing: border-box;
+    /* REMOVED: background and other properties moved to inner container */
+}
+
+/* ADDED: Menu Item Inner Container */
+.menu-item-inner {
     background: white;
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
     position: relative;
+    height: 100%;
 }
 
-.menu-item:hover {
+.menu-item-inner:hover {
     transform: translateY(-10px);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 }
@@ -390,6 +419,18 @@ p {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+/* ADDED: Touch/Swipe indicator for mobile */
+.swipe-indicator {
+    display: none;
+    text-align: center;
+    color: #8B4513;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    opacity: 0.7;
+    position: relative;
+    z-index: 2;
 }
 
 /* Menu Passion Section */
@@ -749,6 +790,11 @@ p {
     font-weight: 600;
 }
 
+@media (max-width: 1024px) {
+    .menu-item {
+        flex: 0 0 33.333%; /* UPDATED: 3 items on tablet */
+    }
+}
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -789,9 +835,29 @@ p {
         gap: 2rem;
     }
 
-    .menu-carousel {
-        grid-template-columns: 1fr;
+    .menu-item {
+        flex: 0 0 50%; /* UPDATED: 2 items on mobile */
     }
+    
+    .showcase-header h2 {
+        font-size: 2.2rem;
+    }
+    
+    .carousel-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 1.3rem;
+    }
+    
+    .menu-image {
+        height: 250px;
+    }
+    
+    .swipe-indicator {
+        display: block; /* ADDED: Show swipe indicator on mobile */
+    }
+
+
 
     .footer-content {
         grid-template-columns: 1fr;
@@ -833,6 +899,30 @@ p {
 
     .image-placeholder {
         height: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .menu-item {
+        flex: 0 0 100%; /* UPDATED: 1 item on small mobile */
+    }
+    
+    .showcase-header h2 {
+        font-size: 1.8rem;
+    }
+    
+    .carousel-controls {
+        gap: 0.5rem;
+    }
+    
+    .carousel-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+    }
+    
+    .menu-image {
+        height: 200px;
     }
 }
 

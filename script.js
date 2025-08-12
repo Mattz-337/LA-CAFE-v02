@@ -1,17 +1,3 @@
-// Mobile Navigation Toggle
-const hamburger = document.querySelector('.hamburger');
-const navMenu = document.querySelector('.nav-menu');
-
-hamburger.addEventListener('click', () => {
-    hamburger.classList.toggle('active');
-    navMenu.classList.toggle('active');
-});
-
-// Close mobile menu when clicking on a link
-document.querySelectorAll('.nav-link').forEach(n => n.addEventListener('click', () => {
-    hamburger.classList.remove('active');
-    navMenu.classList.remove('active');
-}));
 
 // Smooth scrolling for navigation links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -39,186 +25,262 @@ window.addEventListener('scroll', () => {
     }
 });
 
-// Menu Carousel Functionality (Infinite Loop like Kites Cafe)
-const menuCarousel = document.querySelector('.menu-carousel');
-let menuItems = Array.from(document.querySelectorAll('.menu-item'));
-const prevBtn = document.querySelector('.prev-btn');
-const nextBtn = document.querySelector('.next-btn');
-
-let itemsPerView = window.innerWidth > 768 ? 4 : window.innerWidth > 480 ? 2 : 1;
-let currentIndex = itemsPerView;
-let autoplayInterval = null;
-let isTransitioning = false;
-
-function cloneMenuItems() {
-    // First, get all original menu items and store them
-    const originalItems = Array.from(document.querySelectorAll('.menu-item'));
-    const total = originalItems.length;
-    
-    if (total === 0) return; // Safety check
-    
-    // Clear the carousel
-    menuCarousel.innerHTML = '';
-    
-    // Clone last itemsPerView and add to beginning
-    for (let i = total - itemsPerView; i < total; i++) {
-        const clone = originalItems[i].cloneNode(true);
-        clone.classList.add('clone');
-        menuCarousel.appendChild(clone);
-        menuCarousel.insertBefore(clone, menuCarousel.firstChild);
+// UPDATED: Menu Carousel Functionality - Mobile Responsive Fix
+class MenuCarousel {
+    constructor() {
+        this.carousel = document.querySelector('.menu-carousel');
+        this.prevBtn = document.querySelector('.prev-btn');
+        this.nextBtn = document.querySelector('.next-btn');
+        this.items = Array.from(document.querySelectorAll('.menu-item'));
+        
+        if (!this.carousel || !this.items.length) return;
+        
+        this.currentIndex = 0;
+        this.itemsPerView = this.getItemsPerView();
+        this.totalItems = this.items.length;
+        this.maxIndex = Math.max(0, this.totalItems - this.itemsPerView);
+        
+        this.isTransitioning = false;
+        this.autoplayInterval = null;
+        
+        this.init();
     }
     
-    // Add all original items
-    originalItems.forEach(item => {
-        menuCarousel.appendChild(item);
-    });
-    
-    // Clone first itemsPerView and add to end
-    for (let i = 0; i < itemsPerView; i++) {
-        const clone = originalItems[i].cloneNode(true);
-        clone.classList.add('clone');
-        menuCarousel.appendChild(clone);
+    getItemsPerView() {
+        const width = window.innerWidth;
+        if (width <= 480) return 1;
+        if (width <= 768) return 2;
+        if (width <= 1024) return 3;
+        return 4;
     }
     
-    // Update the menuItems array with all items (including clones)
-    menuItems = Array.from(menuCarousel.children);
-}
-
-function setCarouselTransition(enable) {
-    menuCarousel.style.transition = enable ? 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none';
-}
-
-function updateCarousel() {
-    setCarouselTransition(true);
-    const translateX = -currentIndex * (100 / itemsPerView);
-    menuCarousel.style.transform = `translateX(${translateX}%)`;
-}
-
-function nextSlide() {
-    if (isTransitioning) return;
-    isTransitioning = true;
-    currentIndex++;
-    updateCarousel();
-}
-
-function prevSlide() {
-    if (isTransitioning) return;
-    isTransitioning = true;
-    currentIndex--;
-    updateCarousel();
-}
-
-function handleTransitionEnd() {
-    const totalOriginal = menuItems.length - 2 * itemsPerView;
-    
-    // If we're at the end clones, jump to real first items
-    if (currentIndex >= totalOriginal + itemsPerView) {
-        setCarouselTransition(false);
-        currentIndex = itemsPerView;
-        const translateX = -currentIndex * (100 / itemsPerView);
-        menuCarousel.style.transform = `translateX(${translateX}%)`;
+    init() {
+        this.wrapMenuItems();
+        this.setupEventListeners();
+        this.setupTouchEvents();
+        this.updateCarousel();
+        this.startAutoplay();
+        this.updateButtons();
     }
     
-    // If we're at the beginning clones, jump to real last items
-    if (currentIndex < itemsPerView) {
-        setCarouselTransition(false);
-        currentIndex = totalOriginal + itemsPerView - 1;
-        const translateX = -currentIndex * (100 / itemsPerView);
-        menuCarousel.style.transform = `translateX(${translateX}%)`;
+    wrapMenuItems() {
+        // Wrap existing menu items with inner containers if not already wrapped
+        this.items.forEach(item => {
+            if (!item.querySelector('.menu-item-inner')) {
+                const inner = document.createElement('div');
+                inner.className = 'menu-item-inner';
+                inner.innerHTML = item.innerHTML;
+                item.innerHTML = '';
+                item.appendChild(inner);
+            }
+        });
     }
     
-    setTimeout(() => {
-        setCarouselTransition(true);
-        isTransitioning = false;
-    }, 20);
-}
-
-function startAutoplay() {
-    if (autoplayInterval) clearInterval(autoplayInterval);
-    autoplayInterval = setInterval(() => {
-        nextSlide();
-    }, 4000); // 4 seconds like Kites Cafe
-}
-
-// Button event listeners
-if (prevBtn && nextBtn) {
-    prevBtn.addEventListener('click', () => {
-        prevSlide();
-        startAutoplay(); // Reset autoplay timer
-    });
-    nextBtn.addEventListener('click', () => {
-        nextSlide();
-        startAutoplay(); // Reset autoplay timer
-    });
-}
-
-// Responsive handling
-window.addEventListener('resize', () => {
-    const newItemsPerView = window.innerWidth > 768 ? 4 : window.innerWidth > 480 ? 2 : 1;
-    if (newItemsPerView !== itemsPerView) {
-        itemsPerView = newItemsPerView;
-        currentIndex = itemsPerView;
-        cloneMenuItems();
-        setCarouselTransition(false);
-        updateCarousel();
-        setTimeout(() => setCarouselTransition(true), 20);
-    }
-});
-
-// Touch/swipe support for mobile
-let startX = 0;
-let currentX = 0;
-let isDragging = false;
-
-menuCarousel.addEventListener('touchstart', (e) => {
-    startX = e.touches[0].clientX;
-    isDragging = true;
-    setCarouselTransition(false);
-});
-
-menuCarousel.addEventListener('touchmove', (e) => {
-    if (!isDragging) return;
-    currentX = e.touches[0].clientX;
-    const diff = currentX - startX;
-    const translateX = -currentIndex * (100 / itemsPerView) + (diff / menuCarousel.offsetWidth) * 100;
-    menuCarousel.style.transform = `translateX(${translateX}%)`;
-});
-
-menuCarousel.addEventListener('touchend', () => {
-    if (!isDragging) return;
-    isDragging = false;
-    setCarouselTransition(true);
-    
-    const diff = currentX - startX;
-    if (Math.abs(diff) > 50) { // Minimum swipe distance
-        if (diff > 0) {
-            prevSlide();
-        } else {
-            nextSlide();
+    setupEventListeners() {
+        if (this.prevBtn) {
+            this.prevBtn.addEventListener('click', () => this.prev());
         }
-    } else {
-        updateCarousel(); // Return to original position
+        if (this.nextBtn) {
+            this.nextBtn.addEventListener('click', () => this.next());
+        }
+        
+        window.addEventListener('resize', () => {
+            const newItemsPerView = this.getItemsPerView();
+            if (newItemsPerView !== this.itemsPerView) {
+                this.itemsPerView = newItemsPerView;
+                this.maxIndex = Math.max(0, this.totalItems - this.itemsPerView);
+                this.currentIndex = Math.min(this.currentIndex, this.maxIndex);
+                this.updateCarousel();
+                this.updateButtons();
+            }
+        });
+        
+        // Pause autoplay on hover
+        this.carousel.addEventListener('mouseenter', () => this.pauseAutoplay());
+        this.carousel.addEventListener('mouseleave', () => this.startAutoplay());
     }
-    startAutoplay();
-});
+    
+    setupTouchEvents() {
+        let startX = 0;
+        let currentX = 0;
+        let isDragging = false;
+        let startTransform = 0;
+        
+        this.carousel.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            isDragging = true;
+            this.pauseAutoplay();
+            
+            const transform = this.carousel.style.transform;
+            startTransform = transform ? parseFloat(transform.match(/-?\d+(\.\d+)?/)) || 0 : 0;
+            
+            this.carousel.style.transition = 'none';
+        }, { passive: true });
+        
+        this.carousel.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            
+            currentX = e.touches[0].clientX;
+            const diff = currentX - startX;
+            const itemWidth = 100 / this.itemsPerView;
+            const dragPercent = (diff / this.carousel.offsetWidth) * 100;
+            
+            const newTransform = startTransform + dragPercent;
+            this.carousel.style.transform = `translateX(${newTransform}%)`;
+        }, { passive: true });
+        
+        this.carousel.addEventListener('touchend', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            
+            this.carousel.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            
+            const diff = currentX - startX;
+            const threshold = 50;
+            
+            if (Math.abs(diff) > threshold) {
+                if (diff > 0 && this.currentIndex > 0) {
+                    this.prev();
+                } else if (diff < 0 && this.currentIndex < this.maxIndex) {
+                    this.next();
+                } else {
+                    this.updateCarousel();
+                }
+            } else {
+                this.updateCarousel();
+            }
+            
+            this.startAutoplay();
+        }, { passive: true });
+    }
+    
+    updateCarousel() {
+        if (this.isTransitioning) return;
+        
+        const itemWidth = 100 / this.itemsPerView;
+        const translateX = -this.currentIndex * itemWidth;
+        this.carousel.style.transform = `translateX(${translateX}%)`;
+        this.updateButtons();
+    }
+    
+    updateButtons() {
+        if (this.prevBtn) {
+            this.prevBtn.disabled = this.currentIndex === 0;
+        }
+        if (this.nextBtn) {
+            this.nextBtn.disabled = this.currentIndex >= this.maxIndex;
+        }
+    }
+    
+    next() {
+        if (this.isTransitioning || this.currentIndex >= this.maxIndex) return;
+        this.isTransitioning = true;
+        this.pauseAutoplay(); // Pause autoplay on manual navigation
+        this.currentIndex++;
+        this.updateCarousel();
+        setTimeout(() => {
+            this.isTransitioning = false;
+            this.startAutoplay(); // Resume autoplay
+        }, 600); // 600ms transition (matches CSS)
+    }
+    
+    prev() {
+        if (this.isTransitioning || this.currentIndex === 0) return;
+        this.isTransitioning = true;
+        this.pauseAutoplay();
+        this.currentIndex--;
+        this.updateCarousel();
+        setTimeout(() => {
+            this.isTransitioning = false;
+            this.startAutoplay();
+        }, 600);
+    }
+    
+    startAutoplay() {
+        this.pauseAutoplay();
+        this.autoplayInterval = setInterval(() => {
+            if (this.currentIndex >= this.maxIndex) {
+                this.currentIndex = 0;
+            } else {
+                this.currentIndex++;
+            }
+            this.updateCarousel();
+        }, 3000);
+    }
+    
+    pauseAutoplay() {
+        if (this.autoplayInterval) {
+            clearInterval(this.autoplayInterval);
+            this.autoplayInterval = null;
+        }
+    }
+}
 
-// Transition end listener
-menuCarousel.addEventListener('transitionend', handleTransitionEnd);
-
-// Initialize carousel
+// REPLACE the old menu carousel code with this:
 document.addEventListener('DOMContentLoaded', () => {
-    cloneMenuItems();
-    if (menuItems.length > 0) {
-        setCarouselTransition(false);
-        updateCarousel();
-        setTimeout(() => setCarouselTransition(true), 20);
-        startAutoplay();
-    } else {
-        console.log('No menu items found for carousel');
+    // Initialize the new menu carousel
+    new MenuCarousel();
+    
+    // Add swipe indicator to showcase section if not present
+    const menuShowcase = document.querySelector('.menu-showcase .container');
+    if (menuShowcase && !menuShowcase.querySelector('.swipe-indicator')) {
+        const swipeIndicator = document.createElement('div');
+        swipeIndicator.className = 'swipe-indicator';
+        swipeIndicator.textContent = '← Swipe to see more items →';
+        menuShowcase.appendChild(swipeIndicator);
     }
 });
 
-// Intersection Observer for fade-in animations
+// KEEP all your existing JavaScript code below this point:
+// Mobile Navigation Toggle, Smooth scrolling, Navbar background change, etc.
+// Just REMOVE or COMMENT OUT the old menu carousel code
+
+// Mobile Navigation Toggle (KEEP THIS)
+const hamburger = document.querySelector('.hamburger');
+const navMenu = document.querySelector('.nav-menu');
+
+if (hamburger && navMenu) {
+    hamburger.addEventListener('click', () => {
+        hamburger.classList.toggle('active');
+        navMenu.classList.toggle('active');
+    });
+
+    // Close mobile menu when clicking on a link
+    document.querySelectorAll('.nav-link').forEach(n => n.addEventListener('click', () => {
+        hamburger.classList.remove('active');
+        navMenu.classList.remove('active');
+    }));
+}
+
+// Smooth scrolling for navigation links (KEEP THIS)
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
+});
+
+// Navbar background change on scroll (KEEP THIS)
+window.addEventListener('scroll', () => {
+    const navbar = document.querySelector('.navbar');
+    if (navbar) {
+        if (window.scrollY > 100) {
+            navbar.style.background = 'rgba(255, 255, 255, 0.98)';
+            navbar.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.15)';
+        } else {
+            navbar.style.background = 'rgba(255, 255, 255, 0.95)';
+            navbar.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.1)';
+        }
+    }
+});
+
+// Intersection Observer for fade-in animations (KEEP THIS)
 const observerOptions = {
     threshold: 0.1,
     rootMargin: '0px 0px -50px 0px'
@@ -232,7 +294,7 @@ const observer = new IntersectionObserver((entries) => {
     });
 }, observerOptions);
 
-// Observe elements for animation
+// Observe elements for animation (KEEP THIS)
 document.addEventListener('DOMContentLoaded', () => {
     const animateElements = document.querySelectorAll('.menu-item, .about-content, .passion-content, .reservation-content');
     animateElements.forEach(el => {
@@ -241,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Button click effects
+// Button click effects (KEEP THIS)
 document.querySelectorAll('.btn').forEach(button => {
     button.addEventListener('click', function(e) {
         // Create ripple effect
@@ -264,7 +326,7 @@ document.querySelectorAll('.btn').forEach(button => {
     });
 });
 
-// Add ripple effect CSS
+// Add ripple effect CSS (KEEP THIS)
 const style = document.createElement('style');
 style.textContent = `
     .btn {
@@ -287,33 +349,10 @@ style.textContent = `
             opacity: 0;
         }
     }
-    
-    .menu-carousel {
-        display: flex;
-        transition: transform 0.5s ease;
-        gap: 2rem;
-    }
-    
-    .menu-item {
-        flex: 0 0 calc(25% - 1.5rem);
-        min-width: 250px;
-    }
-    
-    @media (max-width: 768px) {
-        .menu-item {
-            flex: 0 0 calc(50% - 1rem);
-        }
-    }
-    
-    @media (max-width: 480px) {
-        .menu-item {
-            flex: 0 0 100%;
-        }
-    }
 `;
 document.head.appendChild(style);
 
-// Parallax effect for hero section
+// Parallax effect for hero section (KEEP THIS)
 window.addEventListener('scroll', () => {
     const scrolled = window.pageYOffset;
     const hero = document.querySelector('.hero');
@@ -323,7 +362,7 @@ window.addEventListener('scroll', () => {
     }
 });
 
-// Active navigation link highlighting
+// Active navigation link highlighting (KEEP THIS)
 window.addEventListener('scroll', () => {
     const sections = document.querySelectorAll('section[id]');
     const navLinks = document.querySelectorAll('.nav-link');
@@ -345,7 +384,7 @@ window.addEventListener('scroll', () => {
     });
 });
 
-// Add active link styles
+// Add active link styles (KEEP THIS)
 const activeLinkStyle = document.createElement('style');
 activeLinkStyle.textContent = `
     .nav-link.active {
@@ -358,9 +397,7 @@ activeLinkStyle.textContent = `
 `;
 document.head.appendChild(activeLinkStyle);
 
-
-
-// Menu exploration button functionality
+// Menu exploration button functionality (KEEP THIS)
 document.querySelectorAll('.btn-secondary').forEach(btn => {
     if (btn.textContent.includes('Explore Menu')) {
         btn.addEventListener('click', () => {
@@ -372,7 +409,7 @@ document.querySelectorAll('.btn-secondary').forEach(btn => {
     }
 });
 
-// Smooth reveal animation for sections
+// Smooth reveal animation for sections (KEEP THIS)
 const revealSections = () => {
     const sections = document.querySelectorAll('section');
     sections.forEach(section => {
@@ -388,7 +425,7 @@ const revealSections = () => {
 window.addEventListener('scroll', revealSections);
 window.addEventListener('load', revealSections);
 
-// Add reveal animation styles
+// Add reveal animation styles (KEEP THIS)
 const revealStyle = document.createElement('style');
 revealStyle.textContent = `
     section {
@@ -409,18 +446,7 @@ revealStyle.textContent = `
 `;
 document.head.appendChild(revealStyle);
 
-// Add hover effects for menu items
-document.querySelectorAll('.menu-item').forEach(item => {
-    item.addEventListener('mouseenter', () => {
-        item.style.transform = 'translateY(-10px) scale(1.02)';
-    });
-    
-    item.addEventListener('mouseleave', () => {
-        item.style.transform = 'translateY(0) scale(1)';
-    });
-});
-
-// Add hover effects for all contact items including address
+// Add hover effects for all contact items including address (KEEP THIS)
 document.querySelectorAll('.contact-item, .address-item').forEach(item => {
     item.addEventListener('mouseenter', function() {
         this.style.transform = 'translateX(5px)';
@@ -431,25 +457,5 @@ document.querySelectorAll('.contact-item, .address-item').forEach(item => {
     });
 });
 
-// Add typing effect for hero text
-const heroText = document.querySelector('.hero-text h1');
-if (heroText) {
-    const text = heroText.textContent;
-    heroText.textContent = '';
-    
-    let i = 0;
-    const typeWriter = () => {
-        if (i < text.length) {
-            heroText.textContent += text.charAt(i);
-            i++;
-            setTimeout(typeWriter, 100);
-        }
-    };
-    
-    // Start typing effect when page loads
-    window.addEventListener('load', () => {
-        setTimeout(typeWriter, 1000);
-    });
-}
+console.log('LA CAFE website loaded successfully with fixed menu carousel!');
 
-console.log('LA CAFE website loaded successfully!'); 
