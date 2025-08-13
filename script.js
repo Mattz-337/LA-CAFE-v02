@@ -25,196 +25,124 @@ window.addEventListener('scroll', () => {
     }
 });
 
-// UPDATED: Menu Carousel Functionality - Mobile Responsive Fix
 class MenuCarousel {
-    constructor() {
-        this.carousel = document.querySelector('.menu-carousel');
-        this.prevBtn = document.querySelector('.prev-btn');
-        this.nextBtn = document.querySelector('.next-btn');
-        this.items = Array.from(document.querySelectorAll('.menu-item'));
-        
-        if (!this.carousel || !this.items.length) return;
-        
-        this.currentIndex = 0;
-        this.itemsPerView = this.getItemsPerView();
-        this.totalItems = this.items.length;
+  constructor() {
+    this.carousel = document.querySelector('.menu-carousel');
+    this.items = Array.from(document.querySelectorAll('.menu-item'));
+    if (!this.carousel || !this.items.length) return;
+
+    this.currentIndex = 0;
+    this.itemsPerView = this.getItemsPerView();
+    this.totalItems = this.items.length;
+    this.maxIndex = Math.max(0, this.totalItems - this.itemsPerView);
+    this.isTransitioning = false;
+    this.autoplayInterval = null;
+
+    this.init();
+  }
+
+  getItemsPerView() {
+    const width = window.innerWidth;
+    if (width <= 480) return 1;
+    if (width <= 768) return 2;
+    if (width <= 1024) return 3;
+    return 4;
+  }
+
+  init() {
+    this.wrapMenuItems();
+    this.setupTouchEvents();
+    this.updateCarousel();
+    this.startAutoplay();
+
+    // Optional: Resize recalculation
+    window.addEventListener('resize', () => {
+      const newItemsPerView = this.getItemsPerView();
+      if (newItemsPerView !== this.itemsPerView) {
+        this.itemsPerView = newItemsPerView;
         this.maxIndex = Math.max(0, this.totalItems - this.itemsPerView);
-        
-        this.isTransitioning = false;
-        this.autoplayInterval = null;
-        
-        this.init();
-    }
-    
-    getItemsPerView() {
-        const width = window.innerWidth;
-        if (width <= 480) return 1;
-        if (width <= 768) return 2;
-        if (width <= 1024) return 3;
-        return 4;
-    }
-    
-    init() {
-        this.wrapMenuItems();
-        this.setupEventListeners();
-        this.setupTouchEvents();
+        this.currentIndex = Math.min(this.currentIndex, this.maxIndex);
         this.updateCarousel();
-        this.startAutoplay();
-        this.updateButtons();
-    }
-    
-    wrapMenuItems() {
-        // Wrap existing menu items with inner containers if not already wrapped
-        this.items.forEach(item => {
-            if (!item.querySelector('.menu-item-inner')) {
-                const inner = document.createElement('div');
-                inner.className = 'menu-item-inner';
-                inner.innerHTML = item.innerHTML;
-                item.innerHTML = '';
-                item.appendChild(inner);
-            }
-        });
-    }
-    
-    setupEventListeners() {
-        if (this.prevBtn) {
-            this.prevBtn.addEventListener('click', () => this.prev());
+      }
+    });
+  }
+
+  wrapMenuItems() {
+    this.items.forEach(item => {
+      if (!item.querySelector('.menu-item-inner')) {
+        const inner = document.createElement('div');
+        inner.className = 'menu-item-inner';
+        inner.innerHTML = item.innerHTML;
+        item.innerHTML = '';
+        item.appendChild(inner);
+      }
+    });
+  }
+
+  setupTouchEvents() {
+    let startX = 0, currentX = 0, isDragging = false, startTransform = 0;
+
+    this.carousel.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      isDragging = true;
+      this.pauseAutoplay();
+      const transform = this.carousel.style.transform;
+      startTransform = transform ? parseFloat(transform.match(/-?\d+(\.\d+)?/)) || 0 : 0;
+      this.carousel.style.transition = 'none';
+    }, { passive: true });
+
+    this.carousel.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      currentX = e.touches[0].clientX;
+      const diff = currentX - startX;
+      const dragPercent = (diff / this.carousel.offsetWidth) * 100;
+      const newTransform = startTransform + dragPercent;
+      this.carousel.style.transform = `translateX(${newTransform}%)`;
+    }, { passive: true });
+
+    this.carousel.addEventListener('touchend', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      this.carousel.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      const diff = currentX - startX;
+      const threshold = 50;
+
+      if (Math.abs(diff) > threshold) {
+        if (diff < 0 && this.currentIndex < this.maxIndex) {
+          this.currentIndex++;
+        } else if (diff > 0 && this.currentIndex > 0) {
+          this.currentIndex--;
         }
-        if (this.nextBtn) {
-            this.nextBtn.addEventListener('click', () => this.next());
-        }
-        
-        window.addEventListener('resize', () => {
-            const newItemsPerView = this.getItemsPerView();
-            if (newItemsPerView !== this.itemsPerView) {
-                this.itemsPerView = newItemsPerView;
-                this.maxIndex = Math.max(0, this.totalItems - this.itemsPerView);
-                this.currentIndex = Math.min(this.currentIndex, this.maxIndex);
-                this.updateCarousel();
-                this.updateButtons();
-            }
-        });
-        
-        // Pause autoplay on hover
-        this.carousel.addEventListener('mouseenter', () => this.pauseAutoplay());
-        this.carousel.addEventListener('mouseleave', () => this.startAutoplay());
-    }
-    
-    setupTouchEvents() {
-        let startX = 0;
-        let currentX = 0;
-        let isDragging = false;
-        let startTransform = 0;
-        
-        this.carousel.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX;
-            isDragging = true;
-            this.pauseAutoplay();
-            
-            const transform = this.carousel.style.transform;
-            startTransform = transform ? parseFloat(transform.match(/-?\d+(\.\d+)?/)) || 0 : 0;
-            
-            this.carousel.style.transition = 'none';
-        }, { passive: true });
-        
-        this.carousel.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            
-            currentX = e.touches[0].clientX;
-            const diff = currentX - startX;
-            const itemWidth = 100 / this.itemsPerView;
-            const dragPercent = (diff / this.carousel.offsetWidth) * 100;
-            
-            const newTransform = startTransform + dragPercent;
-            this.carousel.style.transform = `translateX(${newTransform}%)`;
-        }, { passive: true });
-        
-        this.carousel.addEventListener('touchend', () => {
-            if (!isDragging) return;
-            isDragging = false;
-            
-            this.carousel.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-            
-            const diff = currentX - startX;
-            const threshold = 50;
-            
-            if (Math.abs(diff) > threshold) {
-                if (diff > 0 && this.currentIndex > 0) {
-                    this.prev();
-                } else if (diff < 0 && this.currentIndex < this.maxIndex) {
-                    this.next();
-                } else {
-                    this.updateCarousel();
-                }
-            } else {
-                this.updateCarousel();
-            }
-            
-            this.startAutoplay();
-        }, { passive: true });
-    }
-    
-    updateCarousel() {
-        if (this.isTransitioning) return;
-        
-        const itemWidth = 100 / this.itemsPerView;
-        const translateX = -this.currentIndex * itemWidth;
-        this.carousel.style.transform = `translateX(${translateX}%)`;
-        this.updateButtons();
-    }
-    
-    updateButtons() {
-        if (this.prevBtn) {
-            this.prevBtn.disabled = this.currentIndex === 0;
-        }
-        if (this.nextBtn) {
-            this.nextBtn.disabled = this.currentIndex >= this.maxIndex;
-        }
-    }
-    
-    next() {
-        if (this.isTransitioning || this.currentIndex >= this.maxIndex) return;
-        this.isTransitioning = true;
-        this.pauseAutoplay(); // Pause autoplay on manual navigation
+      }
+      this.updateCarousel();
+      this.startAutoplay();
+    }, { passive: true });
+  }
+
+  updateCarousel() {
+    const itemWidth = 100 / this.itemsPerView;
+    const translateX = -this.currentIndex * itemWidth;
+    this.carousel.style.transform = `translateX(${translateX}%)`;
+  }
+
+  startAutoplay() {
+    this.pauseAutoplay();
+    this.autoplayInterval = setInterval(() => {
+      if (this.currentIndex >= this.maxIndex) {
+        this.currentIndex = 0;
+      } else {
         this.currentIndex++;
-        this.updateCarousel();
-        setTimeout(() => {
-            this.isTransitioning = false;
-            this.startAutoplay(); // Resume autoplay
-        }, 600); // 600ms transition (matches CSS)
-    }
-    
-    prev() {
-        if (this.isTransitioning || this.currentIndex === 0) return;
-        this.isTransitioning = true;
-        this.pauseAutoplay();
-        this.currentIndex--;
-        this.updateCarousel();
-        setTimeout(() => {
-            this.isTransitioning = false;
-            this.startAutoplay();
-        }, 600);
-    }
-    
-    startAutoplay() {
-        this.pauseAutoplay();
-        this.autoplayInterval = setInterval(() => {
-            if (this.currentIndex >= this.maxIndex) {
-                this.currentIndex = 0;
-            } else {
-                this.currentIndex++;
-            }
-            this.updateCarousel();
-        }, 3000);
-    }
-    
-    pauseAutoplay() {
-        if (this.autoplayInterval) {
-            clearInterval(this.autoplayInterval);
-            this.autoplayInterval = null;
-        }
-    }
+      }
+      this.updateCarousel();
+    }, 3000);
+  }
+
+  pauseAutoplay() {
+    clearInterval(this.autoplayInterval);
+    this.autoplayInterval = null;
+  }
 }
+
 
 // REPLACE the old menu carousel code with this:
 document.addEventListener('DOMContentLoaded', () => {

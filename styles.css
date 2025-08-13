@@ -333,36 +333,27 @@ p {
 }
 
 .carousel-controls {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    margin-bottom: 2rem; /* ADDED: Bottom margin */
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
 }
 
-.carousel-btn {
-    width: 50px;
-    height: 50px;
-    border: none;
-    border-radius: 50%;
-    background: #8B4513;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex; /* ADDED: Flex for better centering */
-    align-items: center;
-    justify-content: center;
+.visit-gallery-btn {
+  background: #8B4513;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 12px 30px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.carousel-btn:hover {
-    background: #A0522D;
-    transform: scale(1.1);
-}
-
-.carousel-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
+.visit-gallery-btn:hover {
+  background: #A0522D;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(139, 69, 19, 0.3);
 }
 
 /* UPDATED: Carousel Container */
